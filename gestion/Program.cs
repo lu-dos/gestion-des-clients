@@ -140,21 +140,21 @@ static void AfficheClient()
 
 }
 
-//static void NombreClient()
-//{
-//    string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
-//    string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
-//    using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
-//    using (BinaryWriter sw = new BinaryWriter(fs))
-//    using (BinaryReader sr = new BinaryReader(fs))
-//    {
-//        int count = 0;
-//        while (fs.Position < fs.Length)
-//        {
-//            string nomFichier = sr.ReadString();
-//            string prenomFichier = sr.ReadString();
-//            count++;
-//        }
-//        Console.WriteLine("Nombre total de clients : " + count);
-//    }
-//}
+static void NombreClient()
+{
+    string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+    string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
+    using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
+    using (BinaryWriter sw = new BinaryWriter(fs))
+    using (BinaryReader sr = new BinaryReader(fs))
+    {
+        int count = 0;
+        while (fs.Position < fs.Length)
+        {
+            string nomFichier = sr.ReadString();
+            string prenomFichier = sr.ReadString();
+            count++;
+        }
+        Console.WriteLine("Nombre total de clients : " + count);
+    }
+}
