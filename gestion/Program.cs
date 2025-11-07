@@ -66,9 +66,7 @@ static void AjoutClient()
     using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
     using (BinaryWriter sw = new BinaryWriter(fs))
     {
-
-
-
+         
         Console.Write("Entrez le Numéro de fiche du client : ");
         string fiche = Console.ReadLine();
         sw.Write(fiche);
@@ -122,53 +120,41 @@ static void AfficheClient()
     string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
 
     Console.Write("Entrez le nom du client à afficher : ");
-    string nomrecherche = Console.ReadLine();
-
-    //
+    string nomrecherche = Console.ReadLine() ?? "";
     string nomRechercheNormalise = nomrecherche.ToUpperInvariant();
-    //
 
-    var matches = new List<(long fiche,string nom, string prenom, string numero)>();
+    var matches = new List<(string fiche, string nom, string prenom, string numero)>();
 
-
-    using (FileStream fs = new FileStream(cheminfichier, FileMode.Open, FileAccess.Read))
-    using (BinaryReader sr = new BinaryReader(fs))
+    using (var fs = new FileStream(cheminfichier, FileMode.Open, FileAccess.Read, FileShare.Read))
+    using (var sr = new BinaryReader(fs))
     {
-        long fiche = 0;
-
         while (fs.Position < fs.Length)
         {
+            string ficheStr = sr.ReadString();
             string nomFichier = sr.ReadString();
             string prenomFichier = sr.ReadString();
             string numFichier = sr.ReadString();
 
             if (string.Equals(nomFichier, nomRechercheNormalise, StringComparison.OrdinalIgnoreCase))
             {
-                matches.Add((fiche, nomFichier, prenomFichier, numFichier));
+                matches.Add((ficheStr, nomFichier, prenomFichier, numFichier));
             }
-
-            fiche++;
         }
     }
 
-            if (matches.Count > 0)
-            {
-                Console.WriteLine($"Clients trouvés pour le nom \"{nomrecherche}\" :");
-                foreach (var (fiche, nom, prenom, numero) in matches)
-                {
-                    Console.WriteLine($"Fiche #{fiche} -> Nom: {nom}, Prénom: {prenom}, Numéro: {numero}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Aucun client trouvé pour le nom : {nomrecherche}");
-            }
+    if (matches.Count > 0)
+    {
+        Console.WriteLine($"Clients trouvés pour le nom \"{nomrecherche}\" :");
+        foreach (var m in matches)
+            Console.WriteLine($"Fiche #{m.fiche} -> Nom: {m.nom}, Prénom: {m.prenom}, Numéro: {m.numero}");
+    }
+    else
+    {
+        Console.WriteLine($"Aucun client trouvé pour le nom : {nomrecherche}");
+    }
 
-
-            Console.WriteLine($"Appuyez sur une touche pour continuer ...");
-            Console.ReadLine();
-        
-    
+    Console.WriteLine("Appuyez sur une touche pour continuer ...");
+    Console.ReadLine();
 }
 
 
@@ -176,12 +162,14 @@ static void AfficheAllClients()
 {
     string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
     string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
+
+
+    Console.WriteLine("Liste de tous les clients :");
+
     using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
     using (BinaryWriter sw = new BinaryWriter(fs))
     {
 
-        Console.WriteLine("Liste de tous les clients : ");
-        Console.WriteLine(Majuscule("nom") + " " + FirstMajuscule("prenom"));
 
     }
     Console.ReadLine();
