@@ -539,9 +539,6 @@ static void SuppClient()
     Console.ReadLine();
 }
 
-
-
-
 static void CompressSuppFich()
 {
     string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
