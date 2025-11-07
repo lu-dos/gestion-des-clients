@@ -16,6 +16,9 @@ while (!quitter)
     Console.WriteLine("4. Afficher le nombre de client");
     Console.WriteLine("5. Modifier un client");
     Console.WriteLine("6. Supprimer une fiche");
+    Console.WriteLine("7. Récuperer une fiche supprimé");
+    Console.WriteLine("8. Afficher les fiches supprimés");
+    Console.WriteLine("9. Compresser le fichier");
     Console.WriteLine("10. Quitter");
     Console.Write("Votre choix : ");
 
@@ -50,6 +53,16 @@ while (!quitter)
             case 6:
                 Console.WriteLine("Supprimer une fiche : ");
                 SuppClient();
+                break;
+            case 7:
+                Console.WriteLine("Récuperer une fiche supprimé : ");
+                break;
+            case 8:
+                Console.WriteLine("Afficher les fiches supprimés : ");
+                break;
+            case 9:
+                Console.WriteLine("Compresser le fichier en supprimant les fiches physiquement : ");
+                CompressSuppFich();
                 break;
             case 10:
                 quitter = true;
@@ -111,10 +124,25 @@ static void AjoutClient()
     string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
     string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
 
-    // calculer la fiche auto-incrémentée
-    string fiche = GetNextFiche(cheminfichier);
-    Console.WriteLine($"Fiche assignée automatiquement : {fiche}");
+    // lire tout le fichier en mémoire pour rechercher une place supprimée
+    var clients = new List<(string fiche, string nom, string prenom, string numero)>();
+    if (File.Exists(cheminfichier))
+    {
+        using (var fs = new FileStream(cheminfichier, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var br = new BinaryReader(fs))
+        {
+            while (fs.Position < fs.Length)
+            {
+                string fiche = br.ReadString();
+                string nomClient = br.ReadString(); // renommé
+                string prenomClient = br.ReadString(); // renommé pour éviter le conflit
+                string numero = br.ReadString();
+                clients.Add((fiche, nomClient, prenomClient, numero));
+            }
+        }
+    }
 
+    // saisie utilisateur
     Console.Write("Entrez le nom du client : ");
     string nomInput = Console.ReadLine() ?? "";
     string nom = Majuscule(nomInput.Trim());
@@ -125,29 +153,61 @@ static void AjoutClient()
 
     Console.Write("Entrez le numéro du client : ");
     string num = Console.ReadLine() ?? "";
-
     if (num.Length > 10)
     {
         num = num.Substring(0, 10);
         Console.WriteLine("Le numéro a été tronqué à 10 caractères maximum.");
     }
 
-    try
+    // rechercher première place récupérable (nom marqué par '*')
+    int reuseIndex = clients.FindIndex(c => IsDeleted(c.nom));
+    if (reuseIndex >= 0)
     {
-        using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
-        using (BinaryWriter sw = new BinaryWriter(fs))
-        {
-            sw.Write(fiche);
-            sw.Write(nom);
-            sw.Write(prenom);
-            sw.Write(num);
-        }
+        // réutiliser l'ID existant
+        var old = clients[reuseIndex];
+        clients[reuseIndex] = (old.fiche, nom, prenom, num);
 
-        Console.WriteLine("Client ajouté avec succès !");
+        // réécrire tout le fichier avec la fiche substituée
+        try
+        {
+            using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var bw = new BinaryWriter(fs))
+            {
+                foreach (var c in clients)
+                {
+                    bw.Write(c.fiche);
+                    bw.Write(c.nom);
+                    bw.Write(c.prenom);
+                    bw.Write(c.numero);
+                }
+            }
+            Console.WriteLine($"Client ajouté en réutilisant la fiche {clients[reuseIndex].fiche} (remplacement d'une fiche supprimée).");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erreur lors de l'écriture du fichier : " + ex.Message);
+        }
     }
-    catch (Exception ex)
+    else
     {
-        Console.WriteLine("Erreur lors de l'écriture du fichier : " + ex.Message);
+        // pas de place récupérable : ajout à la fin avec nouvel ID
+        string fiche = GetNextFiche(cheminfichier);
+        try
+        {
+            using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
+            using (BinaryWriter sw = new BinaryWriter(fs))
+            {
+                sw.Write(fiche);
+                sw.Write(nom);
+                sw.Write(prenom);
+                sw.Write(num);
+            }
+            Console.WriteLine($"Client ajouté avec succès (nouvelle fiche {fiche}) !");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erreur lors de l'écriture du fichier : " + ex.Message);
+        }
     }
 
     Console.WriteLine("Appuyez sur une touche pour continuer ...");
@@ -227,17 +287,17 @@ static void AfficheAllClients()
         while (fs.Position < fs.Length)
         {
             string fiche = br.ReadString();
-            string nom = br.ReadString();
-            string prenom = br.ReadString();
+            string nomClient = br.ReadString(); // renommé
+            string prenomClient = br.ReadString(); // renommé pour éviter le conflit
             string numero = br.ReadString();
 
-            if (IsDeleted(nom))
+            if (IsDeleted(nomClient))
             {
                 ficheIndex++;
                 continue; // ne pas afficher les enregistrements supprimés logiquement
             }
 
-            Console.WriteLine($"Fiche #{ficheIndex} -> N°Fiche: {fiche} | Nom: {nom} | Prénom: {prenom} | Numéro: {numero}");
+            Console.WriteLine($"Fiche #{ficheIndex} -> N°Fiche: {fiche} | Nom: {nomClient} | Prénom: {prenomClient} | Numéro: {numero}");
             ficheIndex++;
         }
     }
@@ -258,11 +318,11 @@ static void NombreClient()
         while (fs.Position < fs.Length)
         {
             string fiche = br.ReadString();
-            string nom = br.ReadString();
+            string nomClient = br.ReadString(); // renommé
             string prenom = br.ReadString();
             string numero = br.ReadString();
 
-            if (!IsDeleted(nom))
+            if (!IsDeleted(nomClient))
                 count++;
         }
         Console.WriteLine("Nombre total de clients : " + count);
@@ -305,10 +365,10 @@ static void ModifClient()
         while (fs.Position < fs.Length)
         {
             string fiche = br.ReadString();
-            string nom = br.ReadString();
+            string nomClient = br.ReadString(); // renommé
             string prenom = br.ReadString();
             string numero = br.ReadString();
-            clients.Add((fiche, nom, prenom, numero));
+            clients.Add((fiche, nomClient, prenom, numero));
         }
     }
 
@@ -431,10 +491,10 @@ static void SuppClient()
         while (fs.Position < fs.Length)
         {
             string fiche = br.ReadString();
-            string nom = br.ReadString();
+            string nomClient = br.ReadString(); // renommé
             string prenom = br.ReadString();
             string numero = br.ReadString();
-            clients.Add((fiche, nom, prenom, numero));
+            clients.Add((fiche, nomClient, prenom, numero));
         }
     }
 
@@ -475,6 +535,43 @@ static void SuppClient()
         }
 
     Console.WriteLine("Client marqué comme supprimé (suppression logique) !");
+    Console.WriteLine("Appuyez sur Entrée pour continuer ...");
+    Console.ReadLine();
+}
+
+
+
+
+static void CompressSuppFich()
+{
+    string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+    string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
+    var clients = new List<(string fiche, string nom, string prenom, string numero)>();
+    using (var fs = new FileStream(cheminfichier, FileMode.Open, FileAccess.Read, FileShare.Read))
+    using (var br = new BinaryReader(fs))
+    {
+        while (fs.Position < fs.Length)
+        {
+            string fiche = br.ReadString();
+            string nomClient = br.ReadString(); // renommé
+            string prenom = br.ReadString();
+            string numero = br.ReadString();
+            if (!IsDeleted(nomClient))
+            {
+                clients.Add((fiche, nomClient, prenom, numero));
+            }
+        }
+    }
+    using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
+    using (var bw = new BinaryWriter(fs))
+        foreach (var c in clients)
+        {
+            bw.Write(c.fiche);
+            bw.Write(c.nom);
+            bw.Write(c.prenom);
+            bw.Write(c.numero);
+        }
+    Console.WriteLine("Fichier compressé avec succès en supprimant les fiches logiquement supprimées !");
     Console.WriteLine("Appuyez sur Entrée pour continuer ...");
     Console.ReadLine();
 }
