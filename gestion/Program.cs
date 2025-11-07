@@ -13,8 +13,8 @@ while (!quitter)
     Console.WriteLine("2. Afficher un client");
     Console.WriteLine("3. Afficher tous les clients");
     Console.WriteLine("4. Afficher le nombre de client");
-    Console.WriteLine("5. Option 5");
-    Console.WriteLine("6. Option 6");
+    Console.WriteLine("5. Modifier un client");
+    Console.WriteLine("6. Supprimer une fiche");
     Console.WriteLine("10. Quitter");
     Console.Write("Votre choix : ");
 
@@ -36,6 +36,7 @@ while (!quitter)
                 break;
             case 3:
                 Console.WriteLine("Afficher tous les clients : ");
+                AfficheAllClients();
                 break;
             case 4:
                 Console.WriteLine("Afficher le nombre de client : ");
@@ -73,7 +74,24 @@ static void AjoutClient()
         string prenom = Console.ReadLine();
         sw.Write(FirstMajuscule(prenom));
 
-        string nouvelleLigne = $"{nom},{prenom}";
+        Console.Write("Entrez le numéro du client : ");
+        string num = Console.ReadLine();
+
+        if (num.Length > 10)
+        {
+            num = num.Substring(0, 10);
+            Console.WriteLine("Le numéro a été tronqué à 10 caractères maximum.");
+        }
+        else
+        {
+            Console.WriteLine("\nClient ajouté avec succès !");
+        }
+        sw.Write(num);
+
+
+        Console.ReadLine();
+
+        string nouvelleLigne = $"{nom},{prenom},{num}";
 
     }
 
@@ -116,29 +134,41 @@ static void AfficheClient()
             {
                 matches.Add((nomFichier, prenomFichier));
             }
+
+            if (matches.Count == 0)
+            {
+                Console.WriteLine($"Aucun client trouvé pour le nom : {nomrecherche}");
+            }
+            else
+            {
+                Console.WriteLine($"Clients trouvés pour le nom \"{nomrecherche}\" :");
+                foreach (var (nom, prenom) in matches) ;
+            }
+            Console.WriteLine($"Appuyez sur une touche pour continuer ...");
+            Console.ReadLine();
         }
 
     }
+}
 
 
-
-
-    static void AfficheAllClients()
+static void AfficheAllClients()
+{
+    string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+    string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
+    using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
+    using (BinaryWriter sw = new BinaryWriter(fs))
     {
-        string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
-        string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
-        using (FileStream fs = new FileStream(cheminfichier, FileMode.Append, FileAccess.Write))
-        using (BinaryWriter sw = new BinaryWriter(fs))
-        {
 
-            Console.WriteLine("Liste de tous les clients : ");
-            Console.WriteLine(Majuscule("nom") + " " + FirstMajuscule("prenom"));
-
-        }
+        Console.WriteLine("Liste de tous les clients : ");
+        Console.WriteLine(Majuscule("nom") + " " + FirstMajuscule("prenom"));
 
     }
+    Console.ReadLine();
 
 }
+
+
 
 static void NombreClient()
 {
