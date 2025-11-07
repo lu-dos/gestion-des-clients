@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.IO;
+using System.Reflection;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 bool quitter = false;
 
@@ -66,6 +67,12 @@ static void AjoutClient()
     using (BinaryWriter sw = new BinaryWriter(fs))
     {
 
+
+
+        Console.Write("Entrez le Numéro de fiche du client : ");
+        string fiche = Console.ReadLine();
+        sw.Write(fiche);
+
         Console.Write("Entrez le nom du client : ");
         string nom = Console.ReadLine();
         sw.Write(Majuscule(nom));
@@ -84,14 +91,14 @@ static void AjoutClient()
         }
         else
         {
-            Console.WriteLine("\nClient ajouté avec succès !");
+            Console.WriteLine("Client ajouté avec succès !");
         }
         sw.Write(num);
 
-
+        Console.WriteLine($"Appuyez sur une touche pour continuer ...");
         Console.ReadLine();
 
-        string nouvelleLigne = $"{nom},{prenom},{num}";
+        string nouvelleLigne = $"{fiche}, {nom},{prenom},{num}";
 
     }
 
@@ -111,44 +118,57 @@ static string FirstMajuscule(string prenom)
 
 static void AfficheClient()
 {
-
     string repertoryprojet = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
     string cheminfichier = Path.Combine(repertoryprojet, "clients.dat");
 
     Console.Write("Entrez le nom du client à afficher : ");
     string nomrecherche = Console.ReadLine();
 
-    var matches = new List<(string nom, string prenom)>();
+    //
+    string nomRechercheNormalise = nomrecherche.ToUpperInvariant();
+    //
+
+    var matches = new List<(long fiche,string nom, string prenom, string numero)>();
 
 
     using (FileStream fs = new FileStream(cheminfichier, FileMode.Open, FileAccess.Read))
     using (BinaryReader sr = new BinaryReader(fs))
     {
+        long fiche = 0;
 
         while (fs.Position < fs.Length)
         {
             string nomFichier = sr.ReadString();
             string prenomFichier = sr.ReadString();
+            string numFichier = sr.ReadString();
 
-            if (string.Equals(nomFichier, nomrecherche, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(nomFichier, nomRechercheNormalise, StringComparison.OrdinalIgnoreCase))
             {
-                matches.Add((nomFichier, prenomFichier));
+                matches.Add((fiche, nomFichier, prenomFichier, numFichier));
             }
 
-            if (matches.Count == 0)
+            fiche++;
+        }
+    }
+
+            if (matches.Count > 0)
             {
-                Console.WriteLine($"Aucun client trouvé pour le nom : {nomrecherche}");
+                Console.WriteLine($"Clients trouvés pour le nom \"{nomrecherche}\" :");
+                foreach (var (fiche, nom, prenom, numero) in matches)
+                {
+                    Console.WriteLine($"Fiche #{fiche} -> Nom: {nom}, Prénom: {prenom}, Numéro: {numero}");
+                }
             }
             else
             {
-                Console.WriteLine($"Clients trouvés pour le nom \"{nomrecherche}\" :");
-                foreach (var (nom, prenom) in matches) ;
+                Console.WriteLine($"Aucun client trouvé pour le nom : {nomrecherche}");
             }
+
+
             Console.WriteLine($"Appuyez sur une touche pour continuer ...");
             Console.ReadLine();
-        }
-
-    }
+        
+    
 }
 
 
