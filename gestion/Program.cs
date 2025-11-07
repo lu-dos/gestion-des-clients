@@ -62,6 +62,9 @@ while (!quitter)
     }
 }
 
+static bool IsDeleted(string nom) =>
+    !string.IsNullOrEmpty(nom) && nom.Length > 0 && nom[0] == '*';
+
 static string GetNextFiche(string cheminfichier)
 {
     int maxId = 0;
