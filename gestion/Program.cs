@@ -293,7 +293,7 @@ static void ModifClient()
     }
 
     Console.Write("Entrez la fiche du client à modifier : ");
-    string ficheRecherche = Console.ReadLine() ?? "";
+    string ficheRecherche = Console.ReadLine();
 
     var correspondances = new List<int>();
     for (int i = 0; i < clients.Count; i++)
@@ -362,8 +362,6 @@ static void ModifClient()
         nouveauPrenom = nouveauPrenom.Trim();
         if (nouveauPrenom.Length > 0)
             nouveauPrenom = FirstMajuscule(nouveauPrenom);
-        else
-            nouveauPrenom = client.prenom;
     }
 
     Console.Write("Nouveau numéro : ");
@@ -383,26 +381,18 @@ static void ModifClient()
     clients[indexChoisi] = (nouvelleFiche, nouveauNom, nouveauPrenom, nouveauNumero);
 
     // Réécrire tout le fichier
-    try
-    {
-        using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
-        using (var bw = new BinaryWriter(fs))
+    using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
+    using (var bw = new BinaryWriter(fs))
+        foreach (var c in clients)
         {
-            foreach (var c in clients)
-            {
-                bw.Write(c.fiche);
-                bw.Write(c.nom);
-                bw.Write(c.prenom);
-                bw.Write(c.numero);
-            }
+            bw.Write(c.fiche);
+            bw.Write(c.nom);
+            bw.Write(c.prenom);
+            bw.Write(c.numero);
         }
 
-        Console.WriteLine("Modification enregistrée avec succès !");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Erreur lors de l'écriture du fichier : " + ex.Message);
-    }
+    Console.WriteLine("Modification enregistrée avec succès !");
+
 
     Console.WriteLine("Appuyez sur Entrée pour continuer ...");
     Console.ReadLine();
@@ -435,21 +425,18 @@ static void SuppClient()
         Console.ReadLine();
         return;
     }
-    clients.RemoveAt(indexASupprimer);
 
-        using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
-        using (var bw = new BinaryWriter(fs))
+    clients.RemoveAt(indexASupprimer);
+    using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
+    using (var bw = new BinaryWriter(fs))
+        foreach (var c in clients)
         {
-            foreach (var c in clients)
-            {
-                bw.Write(c.fiche);
-                bw.Write(c.nom);
-                bw.Write(c.prenom);
-                bw.Write(c.numero);
-            }
+            bw.Write(c.fiche);
+            bw.Write(c.nom);
+            bw.Write(c.prenom);
+            bw.Write(c.numero);
         }
-        Console.WriteLine("Client supprimé avec succès !");
-  
+    Console.WriteLine("Client supprimé avec succès !");
     Console.WriteLine("Appuyez sur Entrée pour continuer ...");
     Console.ReadLine();
 }
