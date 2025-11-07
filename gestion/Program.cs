@@ -62,8 +62,14 @@ while (!quitter)
     }
 }
 
-static bool IsDeleted(string nom) =>
-    !string.IsNullOrEmpty(nom) && nom.Length > 0 && nom[0] == '*';
+static bool IsDeleted(string nom)
+{
+    if (string.IsNullOrEmpty(nom))
+        return false;
+
+    
+    return nom[0] == '*';
+}
 
 static string GetNextFiche(string cheminfichier)
 {
@@ -181,6 +187,9 @@ static void AfficheClient()
             string prenomFichier = sr.ReadString();
             string numFichier = sr.ReadString();
 
+            if (IsDeleted(nomFichier))
+                continue;
+
             if (string.Equals(nomFichier, nomRechercheNormalise, StringComparison.OrdinalIgnoreCase))
             {
                 matches.Add((ficheStr, nomFichier, prenomFichier, numFichier));
@@ -222,6 +231,12 @@ static void AfficheAllClients()
             string prenom = br.ReadString();
             string numero = br.ReadString();
 
+            if (IsDeleted(nom))
+            {
+                ficheIndex++;
+                continue; // ne pas afficher les enregistrements supprimés logiquement
+            }
+
             Console.WriteLine($"Fiche #{ficheIndex} -> N°Fiche: {fiche} | Nom: {nom} | Prénom: {prenom} | Numéro: {numero}");
             ficheIndex++;
         }
@@ -242,11 +257,13 @@ static void NombreClient()
         int count = 0;
         while (fs.Position < fs.Length)
         {
-            br.ReadString();
-            br.ReadString();
-            br.ReadString();
-            br.ReadString();
-            count++;
+            string fiche = br.ReadString();
+            string nom = br.ReadString();
+            string prenom = br.ReadString();
+            string numero = br.ReadString();
+
+            if (!IsDeleted(nom))
+                count++;
         }
         Console.WriteLine("Nombre total de clients : " + count);
     }
@@ -301,6 +318,10 @@ static void ModifClient()
     var correspondances = new List<int>();
     for (int i = 0; i < clients.Count; i++)
     {
+        // Ne pas proposer les enregistrements supprimés
+        if (IsDeleted(clients[i].nom))
+            continue;
+
         if (string.Equals(clients[i].fiche, ficheRecherche, StringComparison.OrdinalIgnoreCase))
             correspondances.Add(i);
     }
@@ -395,8 +416,6 @@ static void ModifClient()
         }
 
     Console.WriteLine("Modification enregistrée avec succès !");
-
-
     Console.WriteLine("Appuyez sur Entrée pour continuer ...");
     Console.ReadLine();
 }
@@ -418,18 +437,33 @@ static void SuppClient()
             clients.Add((fiche, nom, prenom, numero));
         }
     }
-    Console.Write("Entrez la fiche du client à supprimer : ");
+
+    Console.Write("Entrez la fiche du client à supprimer (suppression logique) : ");
     string ficheRecherche = Console.ReadLine();
-    int indexASupprimer = clients.FindIndex(c => string.Equals(c.fiche, ficheRecherche, StringComparison.OrdinalIgnoreCase));
+
+    int indexASupprimer = -1;
+    for (int i = 0; i < clients.Count; i++)
+    {
+        if (string.Equals(clients[i].fiche, ficheRecherche, StringComparison.OrdinalIgnoreCase) && !IsDeleted(clients[i].nom))
+        {
+            indexASupprimer = i;
+            break;
+        }
+    }
+
     if (indexASupprimer == -1)
     {
-        Console.WriteLine($"Aucun client trouvé pour la fiche : {ficheRecherche}");
+        Console.WriteLine($"Aucun client trouvé pour la fiche : {ficheRecherche} (ou déjà supprimé)");
         Console.WriteLine("Appuyez sur Entrée pour continuer ...");
         Console.ReadLine();
         return;
     }
 
-    clients.RemoveAt(indexASupprimer);
+    // Marquage logique : préfixer le nom par un astérisque pour indiquer suppression
+    var target = clients[indexASupprimer];
+    string nomMarque = "*" + target.nom;
+    clients[indexASupprimer] = (target.fiche, nomMarque, target.prenom, target.numero);
+
     using (var fs = new FileStream(cheminfichier, FileMode.Create, FileAccess.Write, FileShare.None))
     using (var bw = new BinaryWriter(fs))
         foreach (var c in clients)
@@ -439,7 +473,8 @@ static void SuppClient()
             bw.Write(c.prenom);
             bw.Write(c.numero);
         }
-    Console.WriteLine("Client supprimé avec succès !");
+
+    Console.WriteLine("Client marqué comme supprimé (suppression logique) !");
     Console.WriteLine("Appuyez sur Entrée pour continuer ...");
     Console.ReadLine();
 }
